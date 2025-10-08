@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Check Running Services') {
+            steps {
+                echo "Checking all running services on this machine..."
+                
+                // For systemd-based Linux systems (like Rocky, RHEL, Ubuntu)
+                sh '''
+                    echo "========== Active Services =========="
+                    systemctl list-units --type=service --state=running > running_services.txt
+
+                    echo "Top 10 Running Services:"
+                    head -n 10 running_services.txt
+
+                    echo "===================================="
+                    echo "Saving list to Jenkins workspace..."
+                '''
+            }
+        }
+
+        stage('Archive Results') {
+            steps {
+                // Archive output file so it's visible in Jenkins
+                archiveArtifacts artifacts: 'running_services.txt', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Service check completed successfully."
+        }
+        failure {
+            echo "❌ Something went wrong while checking services."
+        }
+    }
+}
+
